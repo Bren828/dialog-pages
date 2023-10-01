@@ -2,6 +2,8 @@
 
 Pages in the dialog
 
+![Crosshair](https://raw.githubusercontent.com/Bren828/dialog-pages/main/preview.png)
+
 ## Reference
 * [Installation](https://github.com/Bren828/dialog-pages#installation)
 * [Example](https://github.com/Bren828/dialog-pages#example)
