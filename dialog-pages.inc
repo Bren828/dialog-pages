@@ -76,12 +76,12 @@
 
 
 #if !defined DP_NEXT_BUTTON
-    static DP_NEXT_BUTTON[] = "> Next";
+    #define DP_NEXT_BUTTON "> Next"
 #endif
 
 
 #if !defined DP_BACK_BUTTON
-    static DP_BACK_BUTTON[] = "< Back";
+    #define DP_BACK_BUTTON "< Back"
 #endif
 
 
