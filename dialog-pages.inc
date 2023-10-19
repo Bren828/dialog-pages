@@ -267,6 +267,8 @@ stock SetMaxLinesDialogPage(playerid, max_lines)
         #else
             return 0;
         #endif
+    #else
+	return 0;
     #endif
 }
 
