@@ -157,6 +157,8 @@ stock Dialog_Page(playerid, max_lines, const function[], style, const caption[],
         printf("[dialog-pages warning]: 'max_lines' more than '#define DP_MAX_LISTITEM'", _dialog_page[playerid][dl_TotalMaxLines], line_max);
         
         printf("[dialog-pages warning]: Need to increase the '#define DP_MAX_LISTITEM' by %d", DP_MAX_LISTITEM + max_lines - (_dialog_page[playerid][dl_Page] + 1) * (_dialog_page[playerid][dl_TotalMaxLines] + 1));
+    
+        printf("[dialog-pages warning]: Function: %s | Caption: %s\n", function, caption);
     }
 
 
