@@ -1,6 +1,6 @@
 # dialog-pages
 
-Pages in the dialog
+Pages in a dialog for the mdialog library
 
 ![Crosshair](https://raw.githubusercontent.com/Bren828/dialog-pages/main/preview.png)
 
@@ -22,140 +22,123 @@ Include in your code and begin using the library:
 
 ## Example
 ```pawn
-new Benches[60];
-
 CMD:test(playerid, params[])
 {
-    for(new x; x < sizeof(Benches); x ++)
-    {
-        Benches[x] = x+1;
-    }
-
-    SetPageDialogPage(playerid, 0);
     Dialog_Show(playerid, Dialog:Test_Dialog_Page);
     return 1;
 }
+
 
 DialogCreate:Test_Dialog_Page(playerid)
 {
-    new max_lines = 20, // max lines
-        max_benches,
-        line, 
-        string[ (14 + 5) * 20 ],
-        page = GetPageDialogPage(playerid)
-    ;
+    new string[DP_MAX_TEXT_LINE_LENGTH]; // DP_MAX_TEXT_LINE_LENGTH = 160
 
-    for(new x; x < sizeof(Benches); x ++)
+
+	Dialog_ClearPage(playerid);
+	Dialog_SetHeader(playerid, "#\tText"); //for style DIALOG_STYLE_TABLIST_HEADERS
+
+
+    for(new x; x < 200; x ++)
     {
-        if(Benches[x] == 0) continue;
+		format(string, sizeof(string), "#%d. \t Benches %d\n", x+1, x);
 
-        if( max_benches >= page * max_lines) // page check
-        {
-            if(line >= max_lines) // page ended
-            {
-                max_benches++;
-                break;
-            }
-
-            // your code
-
-            format(string, sizeof(string), "%s #%d - Benches %d\n", string, max_benches + 1, Benches[x]);
-
-            SetValueDialogPage(playerid, line, x); // remember the cell number
-            line ++;
-        }
-
-        max_benches++;
+		Dialog_SetString(playerid, string);
     }
 
-    new check = Dialog_Page(playerid, max_benches, Dialog:Test_Dialog_Page, DIALOG_STYLE_TABLIST, "Dialog pages", string, "Select", "Cancel");
-
-    if(check == 0)
-    {
-        Dialog_Message(playerid, "Dialog pages", "{FFFFFF}No benches", "Close");
-        return 1;
-    }
-
+    Dialog_Page(playerid, Dialog:Test_Dialog_Page, DIALOG_STYLE_TABLIST_HEADERS, "Caption", "Select", "Cancel");
     return 1;
 }
 
+
 DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
 {
-    if(!response) 
-    {
-        return 1;
-    }
+    if(!response) return 1;
 
-    // your code
-    new slot = GetValueDialogPage(playerid, listitem); // we get the cell number
-	
+	new text[DP_MAX_TEXT_LINE_LENGTH]; // DP_MAX_TEXT_LINE_LENGTH = 160
+
+	Dialog_GetString(playerid, listitem, text); // or inputtext
+
+	new extraid = Dialog_GetExtraID(playerid, listitem); // Specified in Dialog_SetString
+	new current_page = Dialog_GetPageNumber(playerid);
+
+
     new string[144];
-    format(string, sizeof(string), "Benches ID: %d", Benches[slot]);
+    format(string, sizeof(string), "text: %s | extra id: %d | current_page: %d", text, extraid, current_page);
     SendClientMessage(playerid, -1, string);
 
-    Dialog_Show(playerid, Dialog:Test_Dialog_Page);
+
+    Dialog_ShowPage(playerid); // show page again
     return 1;
 }
 ```
 
 ## Functions
-
-#### Dialog_Page(playerid, max_lines, const function[], style, const caption[], info[], const button1[], const button2[] = "", sinfo = sizeof(info))
-> Show dialog
+<details>
+<summary>Click to expand the list</summary>
+	
+#### Dialog_ClearPage(playerid)
+> Clear the dialog pages
 > * `playerid` - The ID of the player to show the dialog to
-> * `max_lines` - Max list item
+
+#### Dialog_SetString(playerid, const text[], extra_id = 0)
+> Set the line text
+> * `playerid` - The ID of the player to show the dialog to
+> * `text` - Text of the dialog line
+> * `extra_id` - Extra value
+> * `Return` - Returns (0) on failure or (1) on success
+
+#### Dialog_Page(playerid, const function[], style, const caption[], const button1[], const button2[], const next_button[] = DP_NEXT_BUTTON, const back_button[] = DP_BACK_BUTTON)
+> Show the dialog page
+> * `playerid` - The ID of the player to show the dialog to
 > * `function` - The name of the dialog `Dialog:Test`
 > * `style` - The style of the dialog
 > * `caption[]` - The title at the top of the dialog
-> * `info[]` - The text to display in the main dialog
 > * `button1[]` - The text on the left button
 > * `button2[]` - The text on the right button
+> * `next_button[]` - Next button text
+> * `back_button[]` - Back button text
 > * `Return` - Returns (0) on failure or (1) on success
 
-#### SetValueDialogPage(playerid, line, value)
-> Set string value
+#### Dialog_SetHeader(playerid, const header[])
+> Set heading for style DIALOG_STYLE_TABLIST_HEADERS
 > * `playerid` - The ID of the player to show the dialog to
-> * `line` - Line number
-> * `value` - Item
+> * `header[]` - Text of the dialog header
 
-#### GetValueDialogPage(playerid, listitem)
-> Get string value
+#### Dialog_ShowPage(playerid)
+> Show the dialog page
+> * `playerid` - The ID of the player to show the dialog to
+> * `Return` - Returns (0) on failure or (1) on success
+
+#### Dialog_GetString(playerid, listitem, text[])
+> Get text of string
 > * `playerid` - The ID of the player to show the dialog to
 > * `listitem` - The ID of the list item selected by the player
-> * `Return` - Returns the value
-
-#### SetPageDialogPage(playerid, page) 
-> Set page number
-> * `playerid` - The ID of the player to show the dialog to
-> * `page` - Page number
-
-#### GetPageDialogPage(playerid) 
-> Get page number
-> * `playerid` - The ID of the player to show the dialog to
-> * `Return` - Returns the page number
-
-#### GetLastPressedLineDialogPage(playerid) 
-> Get the last pressed line
-> * `playerid` - The ID of the player to show the dialog to
-> * `Return` - Returns the line number
-
-#### SetMaxLinesDialogPage(playerid, max_lines)
-> Set max lines
-> * `playerid` - The ID of the player to show the dialog to
-> * `max_lines` - Max lines in `Dialog_Page`
 > * `Return` - Returns (0) on failure or (1) on success
 
+#### Dialog_GetExtraID(playerid, listitem)
+> Get ExtraID
+> * `playerid` - The ID of the player to show the dialog to
+> * `listitem` - The ID of the list item selected by the player
+> * `Return` - Returns (0) on failure or (1) on success
 
-
+#### Dialog_GetPageNumber(playerid) 
+> Get the page number
+> * `playerid` - The ID of the player to show the dialog to
+</details>
 
 ## Definition
-
+<details>
+<summary>Click to expand the list</summary>
+	
 ```pawn
-#define DP_MAX_LISTITEM 20
-
+#define DP_MAX_LINES 500
+#define DP_MAX_LINES_ON_PAGE 20
+#define DP_MAX_TEXT_LINE_LENGTH 160
+#define DP_MAX_TEXT_CAPTION_LENGTH 128
+#define DP_MAX_TEXT_BUTTON_LENGTH 32
 #define DP_DIALOG_ID 28028
-
-static DP_NEXT_BUTTON[] = "> Next";
-
-static DP_BACK_BUTTON[] = "< Back";
+#define DP_CALLBACK_NAME "dre_"
+#define DP_NEXT_BUTTON "> Next"
+#define DP_BACK_BUTTON "< Back"
 ```
+</details>
