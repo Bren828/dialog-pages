@@ -6,51 +6,15 @@
 *   ---------------------------------------------------
 *
 *	Creater - @Bren828 					
-*									01 October 2023
+*									10 September 2025
 *
-*   Version: 1.0
+*   Version: 1.1
 *
 *   ---------------------------------------------------
 *
 *
 *	https://github.com/Bren828/dialog-pages
 *
-*
-*
-*
-* Create dialog
-*    Dialog_Page(playerid, max_lines, const function[], style, const caption[], info[], const button1[], const button2[] = "", sinfo = sizeof(info))
-*    Return: Returns (0) on failure or (1) on success
-*
-*   
-* Set string value
-*    SetValueDialogPage(playerid, line, value)
-*    Return: Returns (0) on failure or (1) on success
-*
-*
-* Get string value
-*    GetValueDialogPage(playerid, listitem)
-*    Return: Returns the value
-*
-*
-* Set page number
-*    SetPageDialogPage(playerid, page)
-*    Return: Returns (0) on failure or (1) on success
-*
-*
-* Get page number
-*    GetPageDialogPage(playerid)
-*    Return: Returns the page number
-*
-*
-* Get the last pressed line
-*    GetLastPressedLineDialogPage(playerid)
-*    Return: Returns the value
-*
-*
-* Set max lines
-*    SetMaxLinesDialogPage(playerid, max_lines)
-*    Return: Returns (0) on failure or (1) on success
 *
 */
 
@@ -65,159 +29,193 @@
 #endif
 
 
-#if !defined DP_MAX_LISTITEM
-    #define DP_MAX_LISTITEM 20
+#if !defined DP_MAX_LINES
+    #define DP_MAX_LINES 500
 #endif
 
+#if !defined DP_MAX_LINES_ON_PAGE
+    #define DP_MAX_LINES_ON_PAGE 20
+#endif
+
+#if !defined DP_MAX_TEXT_LINE_LENGTH
+    #define DP_MAX_TEXT_LINE_LENGTH 160
+#endif
+
+#if !defined DP_MAX_TEXT_CAPTION_LENGTH
+    #define DP_MAX_TEXT_CAPTION_LENGTH 128
+#endif
+
+#if !defined DP_MAX_TEXT_BUTTON_LENGTH
+    #define DP_MAX_TEXT_BUTTON_LENGTH 32
+#endif
 
 #if !defined DP_DIALOG_ID
     #define DP_DIALOG_ID 28028
 #endif
 
+#if !defined DP_CALLBACK_NAME
+    #define DP_CALLBACK_NAME "dre_"
+#endif
 
 #if !defined DP_NEXT_BUTTON
     #define DP_NEXT_BUTTON "> Next"
 #endif
-
 
 #if !defined DP_BACK_BUTTON
     #define DP_BACK_BUTTON "< Back"
 #endif
 
 
-
 enum DIALOG_PAGES_EN
 {
-    dl_Page,
-    dl_NextButton,
-    dl_BackButton,
-    dl_ListitemID[DP_MAX_LISTITEM],
-    dl_Function[MAX_FUNCTION_NAME],
-    dl_MaxLines,
-    dl_TotalMaxLines,
-    dl_LastPressedLine
+    dp_Page,
+    dp_MaxLines,
+  
+    dp_Function[MAX_FUNCTION_NAME],
+    dp_Style,
+    dp_Caption[DP_MAX_TEXT_CAPTION_LENGTH],
+    dp_Button1[DP_MAX_TEXT_BUTTON_LENGTH],
+    dp_Button2[DP_MAX_TEXT_BUTTON_LENGTH],
+    dp_Header[DP_MAX_TEXT_LINE_LENGTH],
 }
 static _dialog_page[MAX_PLAYERS][DIALOG_PAGES_EN];
 
 
 
-stock Dialog_Page(playerid, max_lines, const function[], style, const caption[], info[], const button1[] = "Select", const button2[] = "Cancel", sinfo = sizeof(info))
+enum DIALOG_PAGES_LINE_EN
 {
-    if(strcmp(_dialog_page[playerid][dl_Function], function, true) || strlen(_dialog_page[playerid][dl_Function]) <= 1)
-    {
-        if(_dialog_page[playerid][dl_TotalMaxLines] == 0) _dialog_page[playerid][dl_TotalMaxLines] = DP_MAX_LISTITEM;
-
-        _dialog_page[playerid][dl_Page] = 0;
-        _dialog_page[playerid][dl_NextButton] = 0;
-        _dialog_page[playerid][dl_BackButton] = 0;
-    }
-
-    _dialog_page[playerid][dl_MaxLines] = 0;
-    format(_dialog_page[playerid][dl_Function], MAX_FUNCTION_NAME, function);
-
-    new line_max;
-
-    for(new x = (_dialog_page[playerid][dl_Page] * _dialog_page[playerid][dl_TotalMaxLines]); x < max_lines; x ++)
-    {
-       	if(x >= max_lines) break;
-
-        if(line_max <= _dialog_page[playerid][dl_TotalMaxLines] -1)
-        {
-            _dialog_page[playerid][dl_MaxLines] ++;
-        }
-
-        line_max ++;
-        if(line_max >= _dialog_page[playerid][dl_TotalMaxLines] + 1)
-        {
-            strcat(info, DP_NEXT_BUTTON, sinfo);
-            strcat(info, "\n", sinfo);
-
-            _dialog_page[playerid][dl_NextButton] = line_max;
-            break;
-        }
-    }
-
-    if(_dialog_page[playerid][dl_Page] >= 1)
-    {
-        strcat(info, DP_BACK_BUTTON, sinfo);
-        strcat(info, "\n", sinfo);
-
-        _dialog_page[playerid][dl_BackButton] = line_max + 1;
-    }
+    dpl_Text[DP_MAX_TEXT_LINE_LENGTH],
+    dpl_ExtraID,
+}
+static _dialog_page_line[MAX_PLAYERS][DP_MAX_LINES][DIALOG_PAGES_LINE_EN];
 
 
-    if(line_max == 0 && _dialog_page[playerid][dl_Page] == 0) 
-    {
-        return 0;       
-    }
+
+stock Dialog_SetString(playerid, const text[], extra_id = 0)
+{
+    new next_slot = _dialog_page[playerid][dp_MaxLines];
+
+    if(next_slot >= DP_MAX_LINES) 
+        return printf("Dialog_SetString >>> Increase the DP_MAX_LINES function value to %d", next_slot) & 0;
+
+    format(_dialog_page_line[playerid][next_slot][dpl_Text], DP_MAX_TEXT_LINE_LENGTH, text);
+    _dialog_page_line[playerid][next_slot][dpl_ExtraID] = extra_id;
 
 
-    if(max_lines - 1 >= (_dialog_page[playerid][dl_Page] + 1) * (_dialog_page[playerid][dl_TotalMaxLines] + 1))
-    {
-        printf("[dialog-pages warning]: 'max_lines' more than '#define DP_MAX_LISTITEM'", _dialog_page[playerid][dl_TotalMaxLines], line_max);
-        
-        printf("[dialog-pages warning]: Need to increase the '#define DP_MAX_LISTITEM' by %d", DP_MAX_LISTITEM + max_lines - (_dialog_page[playerid][dl_Page] + 1) * (_dialog_page[playerid][dl_TotalMaxLines] + 1));
-    
-        printf("[dialog-pages warning]: Function: %s | Caption: %s\n", function, caption);
-    }
+    _dialog_page[playerid][dp_MaxLines] = next_slot + 1;
+    return 1;
+}
 
+
+stock Dialog_ClearPage(playerid)
+{
+    _dialog_page[playerid][dp_MaxLines] = 0;
+
+    _dialog_page[playerid][dp_Page] = 1;
+    return 1;
+}
+
+
+stock Dialog_SetHeader(playerid, const header[])
+{
+    format(_dialog_page[playerid][dp_Header], DP_MAX_TEXT_LINE_LENGTH, "%s\n", header);
+    return 1;
+}
+
+
+stock Dialog_Page(playerid, const function[], style, const caption[], const button1[], const button2[], const next_button[] = DP_NEXT_BUTTON, const back_button[] = DP_BACK_BUTTON)
+{
+    if(!_dialog_page[playerid][dp_MaxLines] || !_dialog_page[playerid][dp_Page]) 
+        return print("Dialog_Page >>> Use the Dialog_ClearPages() function before the Dialog_Page() function") & 0;
+
+
+    new info[DP_MAX_TEXT_LINE_LENGTH + (DP_MAX_TEXT_LINE_LENGTH * DP_MAX_LINES_ON_PAGE) + DP_MAX_TEXT_BUTTON_LENGTH + DP_MAX_TEXT_BUTTON_LENGTH],
+        page = _dialog_page[playerid][dp_Page],
+		next = 0,
+		max_line;
+
+    if(style == DIALOG_STYLE_TABLIST_HEADERS) strcat(info, _dialog_page[playerid][dp_Header]);
+
+
+    for(new i = 0; i < _dialog_page[playerid][dp_MaxLines]; i++)
+	{
+		if(max_line >= (page * DP_MAX_LINES_ON_PAGE) && max_line < (page * DP_MAX_LINES_ON_PAGE) + DP_MAX_LINES_ON_PAGE) next ++;
+
+		if(max_line >= (page - 1) * DP_MAX_LINES_ON_PAGE && max_line < ((page - 1) * DP_MAX_LINES_ON_PAGE) + DP_MAX_LINES_ON_PAGE)
+		{
+			format(info, sizeof info, "%s%s\n", info, _dialog_page_line[playerid][max_line][dpl_Text]);
+		}
+
+		max_line++;
+	}
+
+
+    if(!max_line) 
+		return 0;
+
+	if(next) 
+        strcat(info, next_button);
+
+	if(page > 1) 
+        format(info, sizeof(info), "%s\n%s", info, back_button);
+
+
+    format(_dialog_page[playerid][dp_Function], MAX_FUNCTION_NAME, function);
+
+    _dialog_page[playerid][dp_Style] = style;
+    format(_dialog_page[playerid][dp_Caption], DP_MAX_TEXT_CAPTION_LENGTH, caption);
+    format(_dialog_page[playerid][dp_Button1], DP_MAX_TEXT_BUTTON_LENGTH, button1);
+    format(_dialog_page[playerid][dp_Button2], DP_MAX_TEXT_BUTTON_LENGTH, button2);
 
     MDialog_ShowPlayerDialog(playerid, DP_DIALOG_ID, style, caption, info, button1, button2);
+    return 1;
+}
+
+
+stock Dialog_ShowPage(playerid)
+{
+    if(!_dialog_page[playerid][dp_MaxLines] || !_dialog_page[playerid][dp_Page]) 
+        return 0;
+
+    return Dialog_Page(playerid, 
+        _dialog_page[playerid][dp_Function], 
+        _dialog_page[playerid][dp_Style], 
+        _dialog_page[playerid][dp_Caption], 
+        _dialog_page[playerid][dp_Button1],
+        _dialog_page[playerid][dp_Button2]);
+}
+
+
+stock Dialog_GetString(playerid, listitem, text[])
+{
+    new page = _dialog_page[playerid][dp_Page]-1;
+
+    if(page < 0 || !(0 <= listitem < DP_MAX_LINES_ON_PAGE))
+        return 0;
+
+    format(text, DP_MAX_TEXT_LINE_LENGTH, 
+        _dialog_page_line[playerid][ listitem + (page * DP_MAX_LINES_ON_PAGE) ][dpl_Text]);
 
     return 1;
 }
 
 
-
-stock SetValueDialogPage(playerid, line, value)
+stock Dialog_GetExtraID(playerid, listitem)
 {
-    if(line < 0 || line >= DP_MAX_LISTITEM) return 0;
-    
-    _dialog_page[playerid][dl_ListitemID][line] = value;
-    return 1;
+    new page = _dialog_page[playerid][dp_Page]-1;
+
+    if(page < 0 || !(0 <= listitem < DP_MAX_LINES_ON_PAGE))
+        return 0;
+
+    return _dialog_page_line[playerid][ listitem + (page * DP_MAX_LINES_ON_PAGE) ][dpl_ExtraID];
 }
 
 
-stock GetValueDialogPage(playerid, listitem)
-{   
-    if(listitem < 0 || listitem >= DP_MAX_LISTITEM) return 0;
-    
-    return _dialog_page[playerid][dl_ListitemID][listitem];
-}  
-
-
-stock SetPageDialogPage(playerid, page) 
+stock Dialog_GetPageNumber(playerid) 
 {
-    if(page < 0) return 0;
-
-    _dialog_page[playerid][dl_Page] = page;
-    _dialog_page[playerid][dl_NextButton] = 0;
-    if(page == 0) _dialog_page[playerid][dl_BackButton] = 0;
-    
-    return 1;
+    return _dialog_page[playerid][dp_Page];
 }
 
-
-stock GetPageDialogPage(playerid) 
-{
-    return _dialog_page[playerid][dl_Page];
-}
-
-
-stock GetLastPressedLineDialogPage(playerid) 
-{
-    return _dialog_page[playerid][dl_LastPressedLine];
-}
-
-
-stock SetMaxLinesDialogPage(playerid, max_lines)
-{
-    if(max_lines < 1 || max_lines >= DP_MAX_LISTITEM) return 0;
-
-    _dialog_page[playerid][dl_TotalMaxLines] = max_lines;
-
-    return 1;
-}
 
 
 #if defined _inc_y_hooks || defined _INC_y_hooks
@@ -230,37 +228,43 @@ stock SetMaxLinesDialogPage(playerid, max_lines)
     {
         if(response)
         {
-            if(_dialog_page[playerid][dl_NextButton] >= 1 && _dialog_page[playerid][dl_NextButton] - 1 == listitem)
+            if(!strcmp(inputtext, DP_NEXT_BUTTON)) 
             {
-                _dialog_page[playerid][dl_NextButton] = 0;
-                _dialog_page[playerid][dl_Page] ++;
+                _dialog_page[playerid][dp_Page] ++;
 
-                Dialog_Show(playerid, _dialog_page[playerid][dl_Function]);
+                Dialog_Page(playerid, 
+                    _dialog_page[playerid][dp_Function], 
+                    _dialog_page[playerid][dp_Style], 
+                    _dialog_page[playerid][dp_Caption], 
+                    _dialog_page[playerid][dp_Button1],
+                    _dialog_page[playerid][dp_Button2]);
 
                 return 1;
             }
-
-            if(_dialog_page[playerid][dl_BackButton] >= 1 && _dialog_page[playerid][dl_BackButton] - 1 == listitem) 
+            else if(!strcmp(inputtext, DP_BACK_BUTTON)) 
             {
-                _dialog_page[playerid][dl_BackButton] = 0;
-                _dialog_page[playerid][dl_Page] --;
+                _dialog_page[playerid][dp_Page] --;	
 
-                Dialog_Show(playerid, _dialog_page[playerid][dl_Function]);
-
+                Dialog_Page(playerid, 
+                    _dialog_page[playerid][dp_Function], 
+                    _dialog_page[playerid][dp_Style], 
+                    _dialog_page[playerid][dp_Caption], 
+                    _dialog_page[playerid][dp_Button1],
+                    _dialog_page[playerid][dp_Button2]);
+                    
                 return 1;
             }
 
-            if(listitem < 0 || listitem >= _dialog_page[playerid][dl_TotalMaxLines] || _dialog_page[playerid][dl_MaxLines] <= listitem) return 1;
+            if(!(0 <= listitem < DP_MAX_LINES_ON_PAGE)) 
+                return 1;
             
-            _dialog_page[playerid][dl_LastPressedLine] = listitem;
+
+            new function[MAX_FUNCTION_NAME] = DP_CALLBACK_NAME;
+            strcat(function, _dialog_page[playerid][dp_Function], sizeof(function));
+
+            CallLocalFunction(function, "ddds", playerid, response, listitem, inputtext);
+            return 1;
         }
-
-        new function[MAX_FUNCTION_NAME] = "dre_";
-	    strcat(function, _dialog_page[playerid][dl_Function], sizeof(function));
-
-        CallLocalFunction(function, "ddds", playerid, response, listitem, inputtext);
-
-		return 1;
 	}
 
     #if !defined _inc_y_hooks && !defined _INC_y_hooks
@@ -270,7 +274,7 @@ stock SetMaxLinesDialogPage(playerid, max_lines)
             return 0;
         #endif
     #else
-	return 0;
+	    return 0;
     #endif
 }
 
@@ -286,4 +290,3 @@ stock SetMaxLinesDialogPage(playerid, max_lines)
         forward OnDialogResponse_DP(playerid, dialogid, response, listitem, inputtext[]);
     #endif
 #endif
-
