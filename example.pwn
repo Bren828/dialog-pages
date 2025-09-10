@@ -1,82 +1,47 @@
-
-
-
-new Benches[60];
-
-
 CMD:test(playerid, params[])
 {
-	for(new x; x < sizeof(Benches); x ++)
-	{
-		Benches[x] = x+1;
-	}
-
-	SetPageDialogPage(playerid, 0);
-	Dialog_Show(playerid, Dialog:Test_Dialog_Page);
-	return 1;
+    Dialog_Show(playerid, Dialog:Test_Dialog_Page);
+    return 1;
 }
 
 
 DialogCreate:Test_Dialog_Page(playerid)
 {
-	new max_lines = 20, // max lines
-        max_benches,
-        line, 
-    	string[ (14 + 5) * 20 ],
-        page = GetPageDialogPage(playerid)
-    ;
+    new string[DP_MAX_TEXT_LINE_LENGTH]; // DP_MAX_TEXT_LINE_LENGTH = 160
 
-    for(new x; x < sizeof(Benches); x ++)
+
+	Dialog_ClearPage(playerid);
+	Dialog_SetHeader(playerid, "#\tText"); //for style DIALOG_STYLE_TABLIST_HEADERS
+
+
+    for(new x; x < 200; x ++)
     {
-        if(Benches[x] == 0) continue;
+		format(string, sizeof(string), "#%d. \t Benches %d\n", x+1, x);
 
-        if( max_benches >= page * max_lines) // page check
-        {
-            if(line >= max_lines) // page ended
-            {
-                max_benches++;
-                break;
-            }
-
-			// your code
-
-            format(string, sizeof(string), "%s #%d - Benches %d\n", string, max_benches + 1, Benches[x]);
-
-            SetValueDialogPage(playerid, line, x); // remember the cell number
-            line ++;
-        }
-
-        max_benches++;
+		Dialog_SetString(playerid, string);
     }
 
-    new check = Dialog_Page(playerid, max_benches, Dialog:Test_Dialog_Page, DIALOG_STYLE_TABLIST, "Dialog pages", string, "Select", "Cancel");
-
-    if(check == 0)
-	{
-		Dialog_Message(playerid, "Dialog pages", "{FFFFFF}No benches", "Close");
-		return 1;
-	}
-
+    Dialog_Page(playerid, Dialog:Test_Dialog_Page, DIALOG_STYLE_TABLIST_HEADERS, "Caption", "Select", "Cancel");
     return 1;
 }
 
 
-
 DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
 {
-    if(!response) 
-	{
-		return 1;
-	}
+    if(!response) return 1;
 
-    // your code
-    new slot = GetValueDialogPage(playerid, listitem); // we get the cell number
-	
-	new string[144];
-	format(string, sizeof(string), "Benches ID: %d", Benches[slot]);
-	SendClientMessage(playerid, -1, string);
+	new text[DP_MAX_TEXT_LINE_LENGTH]; // DP_MAX_TEXT_LINE_LENGTH = 160
+	Dialog_GetString(playerid, listitem, text); // or inputtext
+
+	new extraid = Dialog_GetExtraID(playerid, listitem);
+	new current_page = Dialog_GetPageNumber(playerid);
 
 
-	Dialog_Show(playerid, Dialog:Test_Dialog_Page);
+    new string[144];
+    format(string, sizeof(string), "text: %s | extra id: %d | current_page: %d", text, extraid, current_page);
+    SendClientMessage(playerid, -1, string);
+
+
+    Dialog_ShowPage(playerid); // show page again
     return 1;
 }
