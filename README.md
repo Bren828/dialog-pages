@@ -33,10 +33,7 @@ DialogCreate:Test_Dialog_Page(playerid)
 {
     new string[DP_MAX_TEXT_LINE_LENGTH]; // DP_MAX_TEXT_LINE_LENGTH = 160
 
-
-	Dialog_ClearPage(playerid);
 	Dialog_SetHeader(playerid, "#\tText"); //for style DIALOG_STYLE_TABLIST_HEADERS
-
 
     for(new x; x < 200; x ++)
     {
@@ -76,10 +73,6 @@ DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
 <details>
 <summary>Click to expand the list</summary>
 	
-#### Dialog_ClearPage(playerid)
-> Clear the dialog pages
-> * `playerid` - The ID of the player to show the dialog to
-
 #### Dialog_SetString(playerid, const text[], extra_id = 0)
 > Set the line text
 > * `playerid` - The ID of the player to show the dialog to
@@ -106,6 +99,11 @@ DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
 
 #### Dialog_ShowPage(playerid)
 > Show the dialog page
+> * `playerid` - The ID of the player to show the dialog to
+> * `Return` - Returns (0) on failure or (1) on success
+
+#### Dialog_UpdatePage(playerid)
+> Update all dialog pages
 > * `playerid` - The ID of the player to show the dialog to
 > * `Return` - Returns (0) on failure or (1) on success
 
@@ -136,7 +134,6 @@ DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
 #define DP_MAX_TEXT_LINE_LENGTH 160
 #define DP_MAX_TEXT_CAPTION_LENGTH 128
 #define DP_MAX_TEXT_BUTTON_LENGTH 32
-#define DP_DIALOG_ID 28028
 #define DP_CALLBACK_NAME "dre_"
 #define DP_NEXT_BUTTON "> Next"
 #define DP_BACK_BUTTON "< Back"
