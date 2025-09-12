@@ -122,6 +122,11 @@ DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
 #### Dialog_GetPageNumber(playerid) 
 > Get the page number
 > * `playerid` - The ID of the player to show the dialog to
+
+#### Dialog_SetPageNumber(playerid, page) 
+> Set the page number
+> * `playerid` - The ID of the player to show the dialog to
+> * `page` - Page numbe
 </details>
 
 ## Definition
