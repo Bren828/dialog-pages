@@ -6,9 +6,9 @@
 *   ---------------------------------------------------
 *
 *	Creater - @Bren828 					
-*									10 September 2025
+*									12 September 2025
 *
-*   Version: 1.1
+*   Version: 1.1.1
 *
 *   ---------------------------------------------------
 *
@@ -49,10 +49,6 @@
     #define DP_MAX_TEXT_BUTTON_LENGTH 32
 #endif
 
-#if !defined DP_DIALOG_ID
-    #define DP_DIALOG_ID 28028
-#endif
-
 #if !defined DP_CALLBACK_NAME
     #define DP_CALLBACK_NAME "dre_"
 #endif
@@ -70,6 +66,7 @@ enum DIALOG_PAGES_EN
 {
     dp_Page,
     dp_MaxLines,
+    bool:dp_Open,
   
     dp_Function[MAX_FUNCTION_NAME],
     dp_Style,
@@ -77,15 +74,17 @@ enum DIALOG_PAGES_EN
     dp_Button1[DP_MAX_TEXT_BUTTON_LENGTH],
     dp_Button2[DP_MAX_TEXT_BUTTON_LENGTH],
     dp_Header[DP_MAX_TEXT_LINE_LENGTH],
+    bool:dp_ResetLines,
+    dp_LastPage
 }
 static _dialog_page[MAX_PLAYERS][DIALOG_PAGES_EN];
-
+static const null_dialog_page[DIALOG_PAGES_EN];
 
 
 enum DIALOG_PAGES_LINE_EN
 {
     dpl_Text[DP_MAX_TEXT_LINE_LENGTH],
-    dpl_ExtraID,
+    dpl_ExtraID
 }
 static _dialog_page_line[MAX_PLAYERS][DP_MAX_LINES][DIALOG_PAGES_LINE_EN];
 
@@ -93,25 +92,25 @@ static _dialog_page_line[MAX_PLAYERS][DP_MAX_LINES][DIALOG_PAGES_LINE_EN];
 
 stock Dialog_SetString(playerid, const text[], extra_id = 0)
 {
-    new next_slot = _dialog_page[playerid][dp_MaxLines];
+    if(_dialog_page[playerid][dp_ResetLines] == true || _dialog_page[playerid][dp_Open] == true) 
+    {
+        _dialog_page[playerid][dp_ResetLines] = false;
+        _dialog_page[playerid][dp_MaxLines] = 0;
+        _dialog_page[playerid][dp_Open] = false;
+    }
 
+
+    new next_slot = _dialog_page[playerid][dp_MaxLines];
     if(next_slot >= DP_MAX_LINES) 
         return printf("Dialog_SetString >>> Increase the DP_MAX_LINES function value to %d", next_slot) & 0;
+
 
     format(_dialog_page_line[playerid][next_slot][dpl_Text], DP_MAX_TEXT_LINE_LENGTH, text);
     _dialog_page_line[playerid][next_slot][dpl_ExtraID] = extra_id;
 
 
     _dialog_page[playerid][dp_MaxLines] = next_slot + 1;
-    return 1;
-}
-
-
-stock Dialog_ClearPage(playerid)
-{
-    _dialog_page[playerid][dp_MaxLines] = 0;
-
-    _dialog_page[playerid][dp_Page] = 1;
+    if(next_slot == 0) _dialog_page[playerid][dp_Page] = 1;
     return 1;
 }
 
@@ -126,8 +125,13 @@ stock Dialog_SetHeader(playerid, const header[])
 stock Dialog_Page(playerid, const function[], style, const caption[], const button1[], const button2[], const next_button[] = DP_NEXT_BUTTON, const back_button[] = DP_BACK_BUTTON)
 {
     if(!_dialog_page[playerid][dp_MaxLines] || !_dialog_page[playerid][dp_Page]) 
-        return print("Dialog_Page >>> Use the Dialog_ClearPages() function before the Dialog_Page() function") & 0;
+        return print("Dialog_Page >>> Use the Dialog_SetString() function before the Dialog_Page() function") & 0;
 
+    if(_dialog_page[playerid][dp_LastPage] != 0) 
+    {
+        _dialog_page[playerid][dp_Page] = _dialog_page[playerid][dp_LastPage];
+        _dialog_page[playerid][dp_LastPage] = 0;
+    }
 
     new info[DP_MAX_TEXT_LINE_LENGTH + (DP_MAX_TEXT_LINE_LENGTH * DP_MAX_LINES_ON_PAGE) + DP_MAX_TEXT_BUTTON_LENGTH + DP_MAX_TEXT_BUTTON_LENGTH],
         page = _dialog_page[playerid][dp_Page],
@@ -160,6 +164,7 @@ stock Dialog_Page(playerid, const function[], style, const caption[], const butt
         format(info, sizeof(info), "%s\n%s", info, back_button);
 
 
+    _dialog_page[playerid][dp_Open] = true;
     format(_dialog_page[playerid][dp_Function], MAX_FUNCTION_NAME, function);
 
     _dialog_page[playerid][dp_Style] = style;
@@ -167,7 +172,7 @@ stock Dialog_Page(playerid, const function[], style, const caption[], const butt
     format(_dialog_page[playerid][dp_Button1], DP_MAX_TEXT_BUTTON_LENGTH, button1);
     format(_dialog_page[playerid][dp_Button2], DP_MAX_TEXT_BUTTON_LENGTH, button2);
 
-    MDialog_ShowPlayerDialog(playerid, DP_DIALOG_ID, style, caption, info, button1, button2);
+    Dialog_Open(playerid, Dialog:_dp_page_dialog, style, caption, info, button1, button2);
     return 1;
 }
 
@@ -183,6 +188,19 @@ stock Dialog_ShowPage(playerid)
         _dialog_page[playerid][dp_Caption], 
         _dialog_page[playerid][dp_Button1],
         _dialog_page[playerid][dp_Button2]);
+}
+
+
+stock Dialog_UpdatePage(playerid)
+{
+    if(!_dialog_page[playerid][dp_MaxLines] || !_dialog_page[playerid][dp_Page]) 
+        return 0;
+
+    _dialog_page[playerid][dp_LastPage] = _dialog_page[playerid][dp_Page];
+    _dialog_page[playerid][dp_ResetLines] = true;
+
+    Dialog_Show(playerid, _dialog_page[playerid][dp_Function]);
+    return 1;
 }
 
 
@@ -217,76 +235,85 @@ stock Dialog_GetPageNumber(playerid)
 }
 
 
-
-#if defined _inc_y_hooks || defined _INC_y_hooks
-    hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
-#else
-    public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
-#endif
+stock Dialog_SetPageNumber(playerid, page) 
 {
-	if(dialogid == DP_DIALOG_ID) 
+    if(page <= 0) page = 1;
+    
+    _dialog_page[playerid][dp_Page] = page;
+    return 1;
+}
+
+
+DialogResponse:_dp_page_dialog(playerid, response, listitem, inputtext[])
+{
+    _dialog_page[playerid][dp_Open] = false;
+
+    if(response)
     {
-        if(response)
+        if(!strcmp(inputtext, DP_NEXT_BUTTON)) 
         {
-            if(!strcmp(inputtext, DP_NEXT_BUTTON)) 
-            {
-                _dialog_page[playerid][dp_Page] ++;
+            _dialog_page[playerid][dp_Page] ++;
 
-                Dialog_Page(playerid, 
-                    _dialog_page[playerid][dp_Function], 
-                    _dialog_page[playerid][dp_Style], 
-                    _dialog_page[playerid][dp_Caption], 
-                    _dialog_page[playerid][dp_Button1],
-                    _dialog_page[playerid][dp_Button2]);
+            Dialog_Page(playerid, 
+                _dialog_page[playerid][dp_Function], 
+                _dialog_page[playerid][dp_Style], 
+                _dialog_page[playerid][dp_Caption], 
+                _dialog_page[playerid][dp_Button1],
+                _dialog_page[playerid][dp_Button2]);
 
-                return 1;
-            }
-            else if(!strcmp(inputtext, DP_BACK_BUTTON)) 
-            {
-                _dialog_page[playerid][dp_Page] --;	
-
-                Dialog_Page(playerid, 
-                    _dialog_page[playerid][dp_Function], 
-                    _dialog_page[playerid][dp_Style], 
-                    _dialog_page[playerid][dp_Caption], 
-                    _dialog_page[playerid][dp_Button1],
-                    _dialog_page[playerid][dp_Button2]);
-                    
-                return 1;
-            }
-
-            if(!(0 <= listitem < DP_MAX_LINES_ON_PAGE)) 
-                return 1;
-            
-
-            new function[MAX_FUNCTION_NAME] = DP_CALLBACK_NAME;
-            strcat(function, _dialog_page[playerid][dp_Function], sizeof(function));
-
-            CallLocalFunction(function, "ddds", playerid, response, listitem, inputtext);
             return 1;
         }
-	}
+        else if(!strcmp(inputtext, DP_BACK_BUTTON)) 
+        {
+            _dialog_page[playerid][dp_Page] --;	
 
-    #if !defined _inc_y_hooks && !defined _INC_y_hooks
-        #if defined OnDialogResponse_DP
-            return OnDialogResponse_DP(playerid, dialogid, response, listitem, inputtext);
-        #else
-            return 0;
-        #endif
-    #else
-	    return 0;
+            Dialog_Page(playerid, 
+                _dialog_page[playerid][dp_Function], 
+                _dialog_page[playerid][dp_Style], 
+                _dialog_page[playerid][dp_Caption], 
+                _dialog_page[playerid][dp_Button1],
+                _dialog_page[playerid][dp_Button2]);
+                
+            return 1;
+        }
+    }
+
+    if(!(0 <= listitem < DP_MAX_LINES_ON_PAGE)) 
+        return 1;
+    
+    new function[MAX_FUNCTION_NAME] = DP_CALLBACK_NAME;
+    strcat(function, _dialog_page[playerid][dp_Function], sizeof(function));
+
+    CallLocalFunction(function, "ddds", playerid, response, listitem, inputtext);
+    
+    _dialog_page[playerid][dp_ResetLines] = true;
+    return 1;
+}
+
+
+
+#if defined _inc_y_hooks || defined _INC_y_hooks
+	hook OnPlayerConnect(playerid)
+#else
+	public OnPlayerConnect(playerid)
+#endif
+{
+	_dialog_page[playerid] = null_dialog_page;
+
+	#if !defined _inc_y_hooks && !defined _INC_y_hooks && defined OnPlayerConnect_DP
+        OnPlayerConnect_DP(playerid);
     #endif
+    return 1;
 }
 
 #if !defined _inc_y_hooks && !defined _INC_y_hooks
-    #if defined _ALS_OnDialogResponse
-        #undef OnDialogResponse
-    #else
-        #define _ALS_OnDialogResponse
-    #endif
-
-    #define OnDialogResponse OnDialogResponse_DP
-    #if defined OnDialogResponse_DP
-        forward OnDialogResponse_DP(playerid, dialogid, response, listitem, inputtext[]);
-    #endif
+	#if defined _ALS_OnPlayerConnect
+		#undef OnPlayerConnect
+	#else
+		#define _ALS_OnPlayerConnect
+	#endif
+	#define OnPlayerConnect OnPlayerConnect_DP
+	#if defined OnPlayerConnect_DP
+		forward OnPlayerConnect_DP(playerid);
+	#endif
 #endif
