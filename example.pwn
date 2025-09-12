@@ -10,7 +10,6 @@ DialogCreate:Test_Dialog_Page(playerid)
     new string[DP_MAX_TEXT_LINE_LENGTH]; // DP_MAX_TEXT_LINE_LENGTH = 160
 
 
-	Dialog_ClearPage(playerid);
 	Dialog_SetHeader(playerid, "#\tText"); //for style DIALOG_STYLE_TABLIST_HEADERS
 
 
@@ -45,3 +44,4 @@ DialogResponse:Test_Dialog_Page(playerid, response, listitem, inputtext[])
     Dialog_ShowPage(playerid); // show page again
     return 1;
 }
+
